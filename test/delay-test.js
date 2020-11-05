@@ -37,11 +37,11 @@ function reef(n = 1) {
   };
 }
 
-describe('Delayed jobs', (it) => {
+describe.skip.group('Delayed jobs', (it) => {
   const redisUrl = process.env.BEE_QUEUE_TEST_REDIS;
-  const gclient = redis.createClient(redisUrl);
+  let gclient;
 
-  it.before(() => gclient);
+  it.before(() => (gclient = redis.createClient(redisUrl)));
 
   let uid = 0;
   it.beforeEach((t) => {

@@ -91,15 +91,15 @@ function spitter() {
   };
 }
 
-describe('Queue', (it) => {
+describe.skip.group('Queue', (it) => {
   const redisUrl = process.env.BEE_QUEUE_TEST_REDIS;
   // redisUrl must have a schema portion, e.g. redis://redis.example.com
   const redisHost = redisUrl
     ? (url.URL ? new url.URL(redisUrl) : url.parse(redisUrl)).hostname
     : undefined;
-  const gclient = redis.createClient(redisUrl);
+  let gclient;
 
-  it.before(() => gclient);
+  it.before(() => (gclient = redis.createClient(redisUrl)));
 
   let uid = 0;
   it.beforeEach((t) => {

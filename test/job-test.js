@@ -6,7 +6,7 @@ import helpers from '../lib/helpers';
 
 import {promisify} from 'promise-callbacks';
 
-describe('Job', (it) => {
+describe.skip.group('Job', (it) => {
   const redisUrl = process.env.BEE_QUEUE_TEST_REDIS;
 
   const data = {foo: 'bar'};

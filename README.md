@@ -1,6 +1,6 @@
 <a name="top"></a>
 ![bee-queue logo](https://raw.githubusercontent.com/bee-queue/bee-queue/master/bee-queue.png)
-[![npm Version][npm-image]][npm-url] [![Build Status][ci-image]][ci-url] [![Coverage Status][coveralls-image]][coveralls-url]
+[![npm Version][npm-image]][npm-url] [![Node.js CI](https://github.com/bee-queue/bee-queue/actions/workflows/node.js.yml/badge.svg)](https://github.com/bee-queue/bee-queue/actions/workflows/node.js.yml) [![Coverage Status][coveralls-image]][coveralls-url]
 
 A simple, fast, robust job/task queue for Node.js, backed by Redis.
 
@@ -29,7 +29,7 @@ queue.process(function (job, done) {
 
 Bee-Queue is meant to power a distributed worker pool and was built with short, real-time jobs in mind. A web server can enqueue a job, wait for a worker process to complete it, and return its results within an HTTP request. Scaling is as simple as running more workers.
 
-Thanks to the folks at [Mixmax](https://mixmax.com), Bee-Queue is once again being regularly [maintained](https://mixmax.com/blog/bee-queue-v1-node-redis-queue)!
+Thanks to the folks at [Mixmax](https://mixmax.com), Bee-Queue is once again being regularly [maintained](https://www.mixmax.com/engineering/bee-queue-v1-node-redis-queue/)!
 
 [Celery](http://www.celeryproject.org/), [Resque](https://github.com/resque/resque), [Kue](https://github.com/Automattic/kue), and [Bull](https://github.com/OptimalBits/bull) operate similarly, but are generally designed for longer background jobs, supporting things like job prioritization and repeatable jobs, which Bee-Queue [currently does not](#contributing). Bee-Queue can handle longer background jobs just fine, but they aren't [the primary focus](#motivation).
 
@@ -329,7 +329,7 @@ The `settings` fields are:
 
 - `prefix`: string, default `bq`. Useful if the `bq:` namespace is, for whatever reason, unavailable or problematic on your redis instance.
 - `stallInterval`: number, ms; the length of the window in which workers must report that they aren't stalling. Higher values will reduce Redis/network overhead, but if a worker stalls, it will take longer before its stalled job(s) will be retried. A higher value will also result in a lower probability of false-positives during stall detection.
-- `nearTermWindow`: number, ms; the window during which delayed jobs will be specifically scheduled using `setTimeout` - if all delayed jobs are further out that this window, the Queue will double-check that it hasn't missed any jobs after the window elapses.
+- `nearTermWindow`: number, ms; the window during which delayed jobs will be specifically scheduled using `setTimeout` - if all delayed jobs are further out than this window, the Queue will double-check that it hasn't missed any jobs after the window elapses.
 - `delayedDebounce`: number, ms; to avoid unnecessary churn for several jobs in short succession, the Queue may delay individual jobs by up to this amount.
 - `redis`: object or string, specifies how to connect to Redis. See [`redis.createClient()`](https://github.com/NodeRedis/node_redis#rediscreateclient) for the full set of options.
 
@@ -737,7 +737,7 @@ const job = await queue.createJob({...})
   .save();
 ```
 
-Explicitly sets the ID of the job. If a job with the given ID already exists, the Job will not be created, and `job.id` will be set to `null`. This method can be used to run a once for each of an external resource by passing that resource's ID. For instance, you might run the setup job for a user only once by setting the job ID to the ID of the user.
+Explicitly sets the ID of the job. If a job with the given ID already exists, the Job will not be created, and `job.id` will be set to `null`. This method can be used to run a job once for each of an external resource by passing that resource's ID. For instance, you might run the setup job for a user only once by setting the job ID to the ID of the user. Furthermore, when this feature is used with queue settings `removeOnSuccess: true` and `removeOnFailure: true`, it will allow that job to be re-run again, effectively ensuring that jobId will have a global concurrency of 1.
 
 Avoid passing a numeric job ID, as it may conflict with an auto-generated ID.
 
@@ -896,7 +896,23 @@ Some significant non-features include:
 
 Some of these could be worthwhile additions; please comment if you're interested in using or helping implement them!
 
-You'll need a local redis server to run the tests. Note that running the tests may delete some keys in the form of `bq:test-*-*:*`.
+## Testing
+
+You'll need a local Redis server to run the tests. Note that running the tests may delete some keys in the form of `bq:test-*-*:*`.
+
+Alternatively, if you have Docker available, you can run tests or do forensic work in an ephemeral container with its own Redis server, e.g.:
+
+```bash
+$ ./run-docker-script.sh
+
+$ ./run-docker-script.sh npx ava --serial --fail-fast --verbose --no-color --timeout 30000
+
+$ ./run-docker-script.sh npm run coverage
+
+$ ./run-docker-script.sh bash
+
+$ ./run-docker-script.sh --help
+```
 
 [npm-image]: https://img.shields.io/npm/v/bee-queue.svg?style=flat
 [npm-url]: https://www.npmjs.com/package/bee-queue

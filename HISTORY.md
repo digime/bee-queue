@@ -1,3 +1,41 @@
+## [1.5.0](https://github.com/bee-queue/bee-queue/compare/v1.4.3...v1.5.0) (2022-11-28)
+
+### Features
+
+- **tests:** add docker-test.sh for running tests in a Docker container ([#554](https://github.com/bee-queue/bee-queue/issues/554)) ([1932b39](https://github.com/bee-queue/bee-queue/commit/1932b39e0d5daba2d85922ac1ff5e15898155302))
+
+### Bug Fixes
+
+- **types:** add types for saveAll() ([#553](https://github.com/bee-queue/bee-queue/issues/553)) ([f909e2a](https://github.com/bee-queue/bee-queue/commit/f909e2a003f2ef97d71d993442eeaddedf2ab5e3)), closes [#318](https://github.com/bee-queue/bee-queue/issues/318)
+
+## [1.4.3](https://github.com/bee-queue/bee-queue/compare/v1.4.2...v1.4.3) (2022-11-23)
+
+### Bug Fixes
+
+- queues stop working when there are more than 8k jobs with the same timestamp ([#550](https://github.com/bee-queue/bee-queue/issues/550)) ([28ca743](https://github.com/bee-queue/bee-queue/commit/28ca74326b89dcdb013317cf39c02fee4fca381e))
+
+## [1.4.2](https://github.com/bee-queue/bee-queue/compare/v1.4.1...v1.4.2) (2022-11-22)
+
+### Bug Fixes
+
+- require redis v3 ([#546](https://github.com/bee-queue/bee-queue/issues/546)) ([445521b](https://github.com/bee-queue/bee-queue/commit/445521b1c00d38900dc6c8244fa96c15c051048e))
+
+## [1.4.1](https://github.com/bee-queue/bee-queue/compare/v1.4.0...v1.4.1) (2022-11-22)
+
+### Bug Fixes
+
+- If the brpoplpush commands fails, wait before retrying ([#162](https://github.com/bee-queue/bee-queue/issues/162)) ([657eb1f](https://github.com/bee-queue/bee-queue/commit/657eb1f7d70ef37dc5f1c1b5e242e31bd1d0c7e5))
+
+## [1.4.0](https://github.com/bee-queue/bee-queue/compare/v1.3.1...v1.4.0) (2021-05-19)
+
+### Features
+
+- **job:** store progress with the whole job data ([#339](https://github.com/bee-queue/bee-queue/issues/339)) ([6df8b5a](https://github.com/bee-queue/bee-queue/commit/6df8b5a6d126d8a9e06300451481f57eab3a7d89))
+
+### Bug Fixes
+
+- typo fix in README ([#412](https://github.com/bee-queue/bee-queue/issues/412)) ([850d1d1](https://github.com/bee-queue/bee-queue/commit/850d1d1bd1c43552ad312bfcd41fe2741994f78a))
+
 ### [1.3.1](https://github.com/bee-queue/bee-queue/compare/v1.3.0...v1.3.1) (2020-11-04)
 
 ### Bug Fixes

@@ -1,14 +1,19 @@
-import {describe} from 'ava-spec';
-import * as url from 'url';
+const {describe} = require('ava-spec');
+const url = require('url');
 
-import Queue from '../lib/queue';
-import helpers from '../lib/helpers';
-import sinon from 'sinon';
+const Queue = require('../lib/queue');
+const helpers = require('../lib/helpers');
+const sinon = require('sinon');
 
-import {promisify} from 'promise-callbacks';
+const {promisify} = require('promise-callbacks');
 
-import redis from '../lib/redis';
-import actualRedis from 'redis';
+const withCallback = (fn) => async (t) => {
+  await promisify(fn)(t);
+  t.pass(); // There must be at least one passing assertion for the test to pass
+};
+
+const redis = require('../lib/redis');
+const actualRedis = require('redis');
 
 // A promise-based barrier.
 function reef(n = 1) {
@@ -181,10 +186,13 @@ describe.skip.group('Queue', (it) => {
     t.context.handleErrors(t);
   });
 
-  it.cb('should support a ready callback', (t) => {
-    const queue = t.context.makeQueue();
-    queue.ready(t.end);
-  });
+  it(
+    'should support a ready callback',
+    withCallback((t, end) => {
+      const queue = t.context.makeQueue();
+      queue.ready(end);
+    })
+  );
 
   it('should indicate whether it is running', async (t) => {
     const queue = t.context.makeQueue();
@@ -225,16 +233,19 @@ describe.skip.group('Queue', (it) => {
         t.false(redis.isReady(queue.eclient));
       });
 
-      it.cb('should support callbacks', (t) => {
-        const queue = t.context.makeQueue();
+      it(
+        'should support callbacks',
+        withCallback((t, end) => {
+          const queue = t.context.makeQueue();
 
-        queue
-          .ready()
-          .then(() => {
-            queue.close(t.end);
-          })
-          .catch(t.end);
-      });
+          queue
+            .ready()
+            .then(() => {
+              queue.close(end);
+            })
+            .catch(end);
+        })
+      );
 
       it('should not fail when called again', async (t) => {
         const queue = t.context.makeQueue();
@@ -242,14 +253,17 @@ describe.skip.group('Queue', (it) => {
         await queue.ready();
 
         await queue.close();
-        await t.notThrows(queue.close());
+        await t.notThrowsAsync(() => queue.close());
       });
 
-      it.cb('should support callbacks when called again', (t) => {
-        const queue = t.context.makeQueue();
+      it(
+        'should support callbacks when called again',
+        withCallback((t, end) => {
+          const queue = t.context.makeQueue();
 
-        queue.close().then(() => void queue.close(t.end), t.end);
-      });
+          queue.close().then(() => void queue.close(end), end);
+        })
+      );
 
       it('should produce quit errors during close', async (t) => {
         const queue = t.context.makeQueue();
@@ -262,7 +276,10 @@ describe.skip.group('Queue', (it) => {
             process.nextTick(done, new Error('quit test error'))
           );
 
-        return t.throws(queue.close(), Error, 'quit test error');
+        return t.throwsAsync(() => queue.close(), {
+          instanceOf: Error,
+          message: 'quit test error',
+        });
       });
 
       it('should allow close after failed startup', async (t) => {
@@ -288,7 +305,7 @@ describe.skip.group('Queue', (it) => {
           redis: redisParam,
         });
 
-        await t.throws(queue.ready(), (err) => err.code === 'ENOTFOUND');
+        await t.throwsAsync(() => queue.ready(), {code: 'ENOTFOUND'});
 
         t.true(relatedStub.calledOnce);
         const client = relatedStub.firstCall.returnValue;
@@ -297,7 +314,7 @@ describe.skip.group('Queue', (it) => {
         t.falsy(queue.client);
         t.false(client.quit.called);
 
-        await t.throws(queue.close(), (err) => err.code === 'ENOTFOUND');
+        await t.throwsAsync(() => queue.close(), {code: 'ENOTFOUND'});
 
         stub.restore();
       });
@@ -424,7 +441,9 @@ describe.skip.group('Queue', (it) => {
         await queue.createJob({}).save();
         await jobs.shift();
 
-        await t.throws(queue.close(10), 'Operation timed out.');
+        await t.throwsAsync(() => queue.close(10), {
+          message: 'Operation timed out.',
+        });
       });
 
       it('should not time out when a job fails', async (t) => {
@@ -437,7 +456,7 @@ describe.skip.group('Queue', (it) => {
         const [, finishJob] = await jobs.shift();
 
         process.nextTick(finishJob, new Error('fails the job'));
-        await t.notThrows(queue.close(1000));
+        await t.notThrowsAsync(() => queue.close(1000));
       });
 
       it('should error if a job completes after the timeout', async (t) => {
@@ -449,7 +468,7 @@ describe.skip.group('Queue', (it) => {
         await queue.createJob({}).save();
         const [, finishJob] = await jobs.shift();
 
-        await t.throws(queue.close(10));
+        await t.throwsAsync(() => queue.close(10));
         finishJob(null);
 
         await helpers.delay(5);
@@ -500,7 +519,9 @@ describe.skip.group('Queue', (it) => {
         t.true(client.ready);
         t.false(client.quit.called);
 
-        await t.notThrows(helpers.callAsync((done) => client.ping(done)));
+        await t.notThrowsAsync(() =>
+          helpers.callAsync((done) => client.ping(done))
+        );
 
         queue = t.context.makeQueue({
           redis: client,
@@ -512,10 +533,10 @@ describe.skip.group('Queue', (it) => {
         t.false(client.ready);
         t.true(client.quit.called);
 
-        await t.throws(
-          helpers.callAsync((done) => client.ping(done)),
-          (err) => redis.isAbortError(err)
+        const err = await t.throwsAsync(() =>
+          helpers.callAsync((done) => client.ping(done))
         );
+        t.true(redis.isAbortError(err));
       });
 
       it('should not quit the command client when quitCommandClient=false', async (t) => {
@@ -533,7 +554,9 @@ describe.skip.group('Queue', (it) => {
         t.true(client.ready);
         t.false(client.quit.called);
 
-        await t.notThrows(helpers.callAsync((done) => client.ping(done)));
+        await t.notThrowsAsync(() =>
+          helpers.callAsync((done) => client.ping(done))
+        );
 
         await helpers.callAsync((done) => client.quit(done));
       });
@@ -548,7 +571,7 @@ describe.skip.group('Queue', (it) => {
         },
       });
 
-      const jobSpy = sinon.spy(queue, '_getNextJob');
+      const jobSpy = sinon.spy(queue, '_waitForJob');
 
       queue.process(async (job) => {
         t.is(job.data.foo, 'bar');
@@ -588,6 +611,47 @@ describe.skip.group('Queue', (it) => {
       t.is(jobSpy.callCount, 2);
 
       t.context.queueErrors = t.context.queueErrors.filter((e) => e !== err);
+    });
+
+    it('should backoff retries to brpoplpush', async (t) => {
+      const queue = t.context.makeQueue({
+        initialRedisFailureRetryDelay: 10,
+      });
+
+      await helpers.waitOn(queue, 'ready');
+
+      queue.bclient.brpoplpush = function (source, destination, timeout, cb) {
+        cb(new Error('redis failed'));
+      };
+
+      const errors = [];
+      queue.on('error', (err) => {
+        t.is(err.message, 'redis failed');
+        errors.push(err);
+      });
+
+      queue.process(() => {});
+
+      const firstErr = await helpers.waitOn(queue, 'error');
+      t.is(firstErr.message, 'redis failed');
+      const start = new Date();
+      t.context.queueErrors = t.context.queueErrors.filter(
+        (e) => e !== firstErr
+      );
+
+      const secondErr = await helpers.waitOn(queue, 'error');
+      t.is(secondErr.message, 'redis failed');
+      t.truthy(new Date() - start > 10);
+      t.context.queueErrors = t.context.queueErrors.filter(
+        (e) => e !== secondErr
+      );
+
+      const thirdErr = await helpers.waitOn(queue, 'error');
+      t.is(thirdErr.message, 'redis failed');
+      t.true(new Date() - start > 30);
+      t.context.queueErrors = t.context.queueErrors.filter(
+        (e) => e !== thirdErr
+      );
     });
   });
 
@@ -660,7 +724,7 @@ describe.skip.group('Queue', (it) => {
         redis: client,
       });
 
-      await t.notThrows(queue.createJob().save());
+      await t.notThrows(() => queue.createJob().save());
     });
   });
 
@@ -920,19 +984,21 @@ describe.skip.group('Queue', (it) => {
     it('accepts start, end parameters for list and zset types', async (t) => {
       const queue = t.context.makeQueue();
 
-      await t.notThrows(queue.getJobs('waiting', {start: 0, end: 10}));
+      await t.notThrows(() => queue.getJobs('waiting', {start: 0, end: 10}));
     });
 
     it('accepts size parameter for set types', async (t) => {
       const queue = t.context.makeQueue();
 
-      await t.notThrows(queue.getJobs('succeeded', {size: 10}));
+      await t.notThrows(() => queue.getJobs('succeeded', {size: 10}));
     });
 
     it('rejects improper queue type', async (t) => {
       const queue = t.context.makeQueue();
 
-      await t.throws(queue.getJobs('not-a-queue-type'), /improper queue type/i);
+      await t.throwsAsync(() => queue.getJobs('not-a-queue-type'), {
+        message: /improper queue type/i,
+      });
     });
 
     it('should support callbacks', async (t) => {
@@ -1138,13 +1204,16 @@ describe.skip.group('Queue', (it) => {
           return batch;
         });
 
-      await t.throws(
-        queue.saveAll([
-          queue.createJob({abc: 'def'}),
-          queue.createJob({def: 'hij'}),
-        ]),
-        Error,
-        'test error'
+      await t.throwsAsync(
+        () =>
+          queue.saveAll([
+            queue.createJob({abc: 'def'}),
+            queue.createJob({def: 'hij'}),
+          ]),
+        {
+          instanceOf: Error,
+          message: 'test error',
+        }
       );
     });
   });
@@ -1534,9 +1603,12 @@ describe.skip.group('Queue', (it) => {
         isWorker: false,
       });
 
-      t.throws(() => {
-        queue.process();
-      }, 'Cannot call Queue#process on a non-worker');
+      t.throws(
+        () => {
+          queue.process();
+        },
+        {message: 'Cannot call Queue#process on a non-worker'}
+      );
 
       t.context.handleErrors(t);
     });
@@ -1546,21 +1618,22 @@ describe.skip.group('Queue', (it) => {
 
       queue.process(() => {});
 
-      t.throws(() => {
-        queue.process();
-      }, 'Cannot call Queue#process twice');
+      t.throws(
+        () => {
+          queue.process();
+        },
+        {message: 'Cannot call Queue#process twice'}
+      );
 
       t.context.handleErrors(t);
     });
 
-    it('refuses to be called after close', (t) => {
+    it('refuses to be called after close', async (t) => {
       const queue = t.context.makeQueue();
 
-      queue.close();
+      await queue.close();
 
-      t.throws(() => {
-        queue.process(() => {});
-      }, /closed/);
+      t.throws(() => queue.process(() => {}), {message: /closed/});
 
       t.context.handleErrors(t);
     });
@@ -1705,9 +1778,13 @@ describe.skip.group('Queue', (it) => {
       });
 
       const job = queue.createJob({});
-      t.throws(() => job.backoff('wow', 100), 'unknown strategy');
-      t.throws(() => job.backoff('fixed', -100), /positive integer/i);
-      t.throws(() => job.backoff('fixed', 44.5), /positive integer/i);
+      t.throws(() => job.backoff('wow', 100), {message: 'unknown strategy'});
+      t.throws(() => job.backoff('fixed', -100), {
+        message: /positive integer/i,
+      });
+      t.throws(() => job.backoff('fixed', 44.5), {
+        message: /positive integer/i,
+      });
     });
 
     it('should support custom backoff strategies', async (t) => {
@@ -1983,7 +2060,9 @@ describe.skip.group('Queue', (it) => {
       });
 
       await resume;
-      await t.throws(deadQueue.close(1), 'Operation timed out.');
+      await t.throwsAsync(() => deadQueue.close(1), {
+        message: 'Operation timed out.',
+      });
 
       const queue = t.context.makeQueue({
         stallInterval: 1,
@@ -2046,7 +2125,9 @@ describe.skip.group('Queue', (it) => {
       finishFirstGood(null);
 
       // Force the dead queue to close with a timeout.
-      await t.throws(deadQueue.close(1), 'Operation timed out.');
+      await t.throwsAsync(() => deadQueue.close(1), {
+        message: 'Operation timed out.',
+      });
 
       const stalls = spitter();
       goodQueue.removeListener('stalled', failStalled);
@@ -2077,7 +2158,9 @@ describe.skip.group('Queue', (it) => {
       const secondJobIds = new Set(secondJobs.map((job) => job.id));
 
       const [deadJob] = await deadJobs.shift();
-      await t.throws(deadQueue.close(1), 'Operation timed out.');
+      await t.throwsAsync(() => deadQueue.close(1), {
+        message: 'Operation timed out.',
+      });
 
       const secondGoodBatch = new Set();
 
@@ -2138,13 +2221,18 @@ describe.skip.group('Queue', (it) => {
         .stub(queue, '_doStalledJobCheck')
         .callsFake(() => Promise.reject(new Error('test error')));
 
-      const immediateError = await t.throws(
-        queue.checkStalledJobs(1),
-        Error,
-        'test error'
+      const immediateError = await t.throwsAsync(
+        () => queue.checkStalledJobs(1),
+        {
+          instanceOf: Error,
+          message: 'test error',
+        }
       );
       await helpers.waitOn(queue, 'error');
-      const firstError = t.throws(t.context.consumeError, Error, 'test error');
+      const firstError = t.throws(t.context.consumeError, {
+        instanceOf: Error,
+        message: 'test error',
+      });
       t.not(firstError, immediateError);
     });
   });
@@ -2457,7 +2545,7 @@ describe.skip.group('Queue', (it) => {
 
       await queue.close();
 
-      await t.throws(queue.destroy(), 'closed');
+      await t.throwsAsync(() => queue.destroy(), {message: 'closed'});
     });
 
     it('should support callbacks', async (t) => {

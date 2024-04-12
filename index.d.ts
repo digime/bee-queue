@@ -31,6 +31,7 @@ declare class BeeQueue<T = any> extends EventEmitter {
 
   isRunning(): boolean;
 
+  connect(): Promise<boolean>;
   createJob<U extends T>(data: U): BeeQueue.Job<U>;
 
   getJob(jobId: string, cb: (job: BeeQueue.Job<T>) => void): void;
@@ -101,6 +102,7 @@ declare namespace BeeQueue {
     removeOnFailure?: boolean;
     quitCommandClient?: boolean;
     redisScanCount?: number;
+    autoConnect?: boolean;
   }
 
   interface Job<T> extends EventEmitter {
@@ -122,7 +124,7 @@ declare namespace BeeQueue {
     delayUntil(dateOrTimestamp: Date | number): this;
     timeout(milliseconds: number): this;
     save(): Promise<this>;
-    save(cb: (job: this) => void): void;
+    save(cb: (err: Error, job: this) => void): void;
     reportProgress(p: any): void;
     remove(): Promise<this>;
     remove(cb: (job: this) => void): void;

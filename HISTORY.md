@@ -1,3 +1,21 @@
+## [1.7.1](https://github.com/bee-queue/bee-queue/compare/v1.7.0...v1.7.1) (2023-11-11)
+
+### Bug Fixes
+
+- fixed the type for job.save function ([#719](https://github.com/bee-queue/bee-queue/issues/719)) ([77a5dac](https://github.com/bee-queue/bee-queue/commit/77a5dacac1e54f4138dc9d3d3e8cf6c76e129d7d))
+
+## [1.7.0](https://github.com/bee-queue/bee-queue/compare/v1.6.0...v1.7.0) (2023-11-06)
+
+### Features
+
+- improve job failure events ([#227](https://github.com/bee-queue/bee-queue/issues/227)) ([15d02c2](https://github.com/bee-queue/bee-queue/commit/15d02c2f7e99505a4a7ce94c12d7311795d28c47))
+
+## [1.6.0](https://github.com/bee-queue/bee-queue/compare/v1.5.0...v1.6.0) (2023-11-02)
+
+### Features
+
+- **queue:** allow manual connection ([#708](https://github.com/bee-queue/bee-queue/issues/708)) ([425fb89](https://github.com/bee-queue/bee-queue/commit/425fb897ef8515f881e9db7e4462ed4f3625eba8))
+
 ## [1.5.0](https://github.com/bee-queue/bee-queue/compare/v1.4.3...v1.5.0) (2022-11-28)
 
 ### Features
